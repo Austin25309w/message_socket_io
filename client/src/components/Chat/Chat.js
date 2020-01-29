@@ -5,6 +5,7 @@ import io from 'socket.io-client';
 
 let socket;
 
+import './Chat.css'
 
 const Chat = ({location}) => {
     const [name, setName] = useState('');
@@ -38,22 +39,25 @@ const Chat = ({location}) => {
     // function for sending messages
     const sendMessage = (event) => {
         event.preventDefault();
+
+        if(message) {
+            socket.emit('sendMessage', message, () => sendMessage(''))
+        }
     }
-    if(message) {
-        socket.emit('sendMessage', message, () => sendMessage(''))
-    }
+    
 
     console.log(message, messages);
 
 
     return(
-        <div className="joinOuterContainer">
+        <div className="outerContainer">
             <div className="container">
-                <input 
+                <InfoBar/>
+                {/* <input 
                     value = {message} 
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyPress={event => event.key === "Enter" ? sendMessage(event) : null}
-                />
+                /> */}
             </div>
         </div>
     )
