@@ -1,8 +1,9 @@
-const express = require('express')
-const socketio = require('socket.io')
 const http = require('http');
+const express = require('express');
+const socketio = require('socket.io');
+const cors = require('cors');
 
-const { addUser, removeUser, getUser, getUsersInRoom } = require('./users.js');
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 
 const PORT = process.env.PORT || 3001
 
@@ -12,9 +13,12 @@ const app = express();
 const server = http.createServer(app);
 const io = socketio(server);
 
-io.on('connection', (socket) => {
+app.use(cors());
+app.use(router);
+
+io.on('connect', (socket) => {
     // console.log('We have a new connection!!')
-    socket.on('join', ({name, room}, callback) =>{
+    socket.on('join', ({name, room}, callback) => {
         // console.log(name, room);
         const { error, user} = addUser({id: socket.id, name, room});
 
@@ -22,10 +26,10 @@ io.on('connection', (socket) => {
 
         socket.join(user.room);
 
-        socket.emit('message', {user: 'admin', text: `${user.name}, welcome to the room ${user.room}`});
-        socket.broadcast.to(user.room).emit('message', { user: 'admin', text: `${user.name}, has joined!`})
+        socket.emit('message', {user: 'admin', text: `${user.name}, welcome to the room ${user.room}.`});
+        socket.broadcast.to(user.room).emit('message', { user: 'admin', text: `${user.name}, has joined!`});
 
-        socket.join(user.room);
+        io.to(user.room).emit('roomData', {room: user.room, users: getUsersInRoom(user.room) });
 
         callback();
     });
@@ -33,7 +37,7 @@ io.on('connection', (socket) => {
     socket.on('sendMessage', (message, callback) => {
         const user = getUser(socket.id);
 
-        io.to(user.room).emit('message', { user: user.name, text: message})
+        io.to(user.room).emit('message', { user: user.name, text: message });
 
         callback();
     }); 
@@ -44,8 +48,10 @@ io.on('connection', (socket) => {
     })
 })
 
-app.use(router);
 
-server.listen(PORT, () => console.log(`Server has started on port ${PORT}`)); 
+
+server.listen(process.env.PORT || 3001, () => console.log(`Server has started. ${PORT}`)); 
 
 //https://www.youtube.com/watch?v=ZwFA3YMfkoc&t=16s
+
+
